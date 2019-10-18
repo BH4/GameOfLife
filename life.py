@@ -106,8 +106,8 @@ def callback(event):
             livingPixelList.append((i, j))
 
 
-ch = 830
-cw = 1200
+ch = 500
+cw = 500
 
 root = tkinter.Tk()
 canvas = tkinter.Canvas(root, bg="white", height=ch, width=cw)
