@@ -82,19 +82,20 @@ class life:
 
         self.livingPixelList = glider
 
-    def idToBool(self, Id):
+    def is_alive(self, x, y):
+        Id = self.idMatrix[x][y]
         return self.canvas.itemcget(Id, "fill") == "black"
 
-    def neighbors(self, x, y):
+    def num_neighbors(self, x, y):
         tot = 0
         for i in range(-1, 2):
             for j in range(-1, 2):
                 if not(j == 0 and i == 0):
-                    tot += self.idToBool(self.idMatrix[(x+i) % self.width][(y+j) % self.height])
+                    tot += self.is_alive((x+i) % self.width, (y+j) % self.height)
 
         return tot
 
-    def allNeighbors(self, pxl):  # list of all neighbors in format [(x,y)]
+    def adjoining_pixel_indices(self, pxl):  # list of all neighbors in format [(x,y)]
         allN = []
         for i in range(-1, 2):
             for j in range(-1, 2):
@@ -106,7 +107,7 @@ class life:
     def union(self, a, b):
         return list(set(a) | set(b))
 
-    def matrixUnion(self, M):
+    def matrix_union(self, M):
         U = []
         for i in M:
             U = self.union(U, i)
@@ -116,14 +117,18 @@ class life:
     def difference(self, a, b):
         return list(set(a) - set(b))
 
-    def deadPixelsWith3Neighbors(self, lpl):
-        dpw3n = []
+    def births(self, lpl):
+        """
+        Pixels that are currently not living but have 3 living neighbors will
+        be living next generation.
+        """
+        locations = []
 
         neighborMatrix = []
         for pxl in lpl:
-            neighborMatrix.append(self.allNeighbors(pxl))
+            neighborMatrix.append(self.adjoining_pixel_indices(pxl))
 
-        NeighborUnion = self.matrixUnion(neighborMatrix)
+        NeighborUnion = self.matrix_union(neighborMatrix)
 
         deadNeighborUnion = self.difference(NeighborUnion, lpl)
 
@@ -134,20 +139,20 @@ class life:
                     count += 1
 
             if count == 3:
-                dpw3n.append(pxl)
+                locations.append(pxl)
 
-        return dpw3n
+        return locations
 
-    def swichMatrix(self):  # switches colors of appropriate entries, returns new live pixel list
+    def swich_matrix(self):  # switches colors of appropriate entries, returns new live pixel list
         spl = []  # switch pixel list
         for pxl in self.livingPixelList:
-            n = self.neighbors(pxl[0], pxl[1])
+            n = self.num_neighbors(pxl[0], pxl[1])
 
             if n > 3 or n < 2:
                 spl.append(pxl)
 
         # list of dead pixel list to switch
-        sdpl = self.deadPixelsWith3Neighbors(self.livingPixelList)
+        sdpl = self.births(self.livingPixelList)
 
         nlpl = self.difference(self.livingPixelList, spl)  # new live pxl list
         for pxl in spl:
@@ -172,7 +177,7 @@ class life:
             # Flip cell. Not allowed after starting.
             i = int((event.x-self.horizontal_margin)/self.cell_size)
             j = int((event.y-self.verticle_margin)/self.cell_size)
-            if self.idToBool(self.idMatrix[i][j]):
+            if self.is_alive(i, j):
                 self.canvas.itemconfig(self.idMatrix[i][j], fill="white")
             else:
                 self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
@@ -180,7 +185,7 @@ class life:
 
     def loop(self):
         if self.end_startup:
-            self.livingPixelList = self.swichMatrix()
+            self.livingPixelList = self.swich_matrix()
 
         self.root.after(1, self.loop)
 
