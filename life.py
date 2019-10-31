@@ -23,6 +23,8 @@ class life:
         self.livingPixelList = None
         self.setup()
 
+        self.currently_flipped_pixels = set()
+
         self.end_startup = False
         self.root.after(1, self.loop)
         self.root.mainloop()
@@ -40,7 +42,8 @@ class life:
 
         # Construct canvas object
         self.canvas = tkinter.Canvas(self.root, bg="white", height=canvas_height, width=canvas_width)
-        self.canvas.bind("<Button-1>", self.callback)
+        self.canvas.bind("<ButtonPress-1>", self.click)
+        self.canvas.bind("<B1-Motion>", self.drag)
         self.canvas.pack()
 
         # Create grid
@@ -164,7 +167,7 @@ class life:
 
         return nlpl
 
-    def callback(self, event):
+    def event_flip(self, event):
         event_left = event.x < self.horizontal_margin
         event_right = event.x > self.horizontal_margin+self.grid_width
         event_above = event.y < self.verticle_margin
@@ -177,11 +180,21 @@ class life:
             # Flip cell. Not allowed after starting.
             i = int((event.x-self.horizontal_margin)/self.cell_size)
             j = int((event.y-self.verticle_margin)/self.cell_size)
-            if self.is_alive(i, j):
-                self.canvas.itemconfig(self.idMatrix[i][j], fill="white")
-            else:
-                self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
-                self.livingPixelList.append((i, j))
+            if (i, j) not in self.currently_flipped_pixels:
+                self.currently_flipped_pixels.add((i, j))
+                if self.is_alive(i, j):
+                    self.canvas.itemconfig(self.idMatrix[i][j], fill="white")
+                else:
+                    self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
+                    self.livingPixelList.append((i, j))
+
+    def click(self, event):
+        self.currently_flipped_pixels = set()
+
+        self.event_flip(event)
+
+    def drag(self, event):
+        self.event_flip(event)
 
     def loop(self):
         if self.end_startup:
