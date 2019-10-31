@@ -25,7 +25,7 @@ class life:
 
         self.currently_flipped_pixels = set()
 
-        self.end_startup = False
+        self.running = False
         self.root.after(1, self.loop)
         self.root.mainloop()
 
@@ -41,10 +41,23 @@ class life:
         canvas_width = self.grid_width+2*self.horizontal_margin
 
         # Construct canvas object
+        self.frame = tkinter.Frame(self.root, bg="white",width=canvas_height,height=canvas_width)
         self.canvas = tkinter.Canvas(self.root, bg="white", height=canvas_height, width=canvas_width)
         self.canvas.bind("<ButtonPress-1>", self.click)
         self.canvas.bind("<B1-Motion>", self.drag)
-        self.canvas.pack()
+        self.canvas.pack(side=tkinter.RIGHT)
+        
+        self.run_stop_text = tkinter.StringVar()
+        button = tkinter.Button(self.frame,
+                                textvariable=self.run_stop_text,
+                                command=self.run_stop)
+        self.run_stop_text.set("Run")
+        button.pack(side=tkinter.TOP)
+        self.frame.pack(side=tkinter.LEFT)
+
+
+        
+        #button.pack(side=tkinter.LEFT)
 
         # Create grid
         # Horizontal lines
@@ -169,14 +182,15 @@ class life:
 
     def event_flip(self, event):
         event_left = event.x < self.horizontal_margin
-        event_right = event.x > self.horizontal_margin+self.grid_width
+        event_right = event.x >= self.horizontal_margin+self.grid_width
         event_above = event.y < self.verticle_margin
-        event_below = event.y > self.verticle_margin+self.grid_height
+        event_below = event.y >= self.verticle_margin+self.grid_height
 
         if event_left or event_right or event_above or event_below:
             # Clicking outside the grid starts the run
-            self.end_startup = True
-        elif not(self.end_startup):
+            # self.running = True
+            pass
+        elif not(self.running):
             # Flip cell. Not allowed after starting.
             i = int((event.x-self.horizontal_margin)/self.cell_size)
             j = int((event.y-self.verticle_margin)/self.cell_size)
@@ -188,6 +202,8 @@ class life:
                     self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
                     self.livingPixelList.append((i, j))
 
+    # Callback functions
+
     def click(self, event):
         self.currently_flipped_pixels = set()
 
@@ -196,8 +212,16 @@ class life:
     def drag(self, event):
         self.event_flip(event)
 
+    def run_stop(self):
+        self.running = not self.running
+
+        if self.running:
+            self.run_stop_text.set("Stop")
+        else:
+            self.run_stop_text.set("Run")
+
     def loop(self):
-        if self.end_startup:
+        if self.running:
             self.livingPixelList = self.swich_matrix()
 
         self.root.after(1, self.loop)
