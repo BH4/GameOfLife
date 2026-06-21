@@ -48,7 +48,9 @@ class life:
         self.run_stop_text = tkinter.StringVar()
         button = tkinter.Button(self.frame,
                                 textvariable=self.run_stop_text,
-                                command=self.run_stop)
+                                command=self.run_stop,
+                                width=5,
+                                height=2)
         self.run_stop_text.set("Run")
         button.pack(side=tkinter.TOP)
         self.frame.pack(side=tkinter.LEFT)
