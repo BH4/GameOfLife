@@ -11,11 +11,11 @@ class life:
 
         self.root = tkinter.Tk()
 
-        self.verticle_margin = 15
+        self.vertical_margin = 15
         self.horizontal_margin = 50
         self.cell_size = 10
-        self.grid_height = height*self.cell_size
-        self.grid_width = width*self.cell_size
+        self.grid_height = self.height*self.cell_size
+        self.grid_width = self.width*self.cell_size
 
         # Name attributes which will be created in setup
         self.canvas = None
@@ -35,18 +35,18 @@ class life:
         """
 
         numH = self.height
-        canvas_height = self.grid_height+2*self.verticle_margin
+        canvas_height = self.grid_height+2*self.vertical_margin
 
         numW = self.width
         canvas_width = self.grid_width+2*self.horizontal_margin
 
         # Construct canvas object
-        self.frame = tkinter.Frame(self.root, bg="white",width=canvas_height,height=canvas_width)
+        self.frame = tkinter.Frame(self.root, bg="white", height=canvas_height, width=canvas_width)
         self.canvas = tkinter.Canvas(self.root, bg="white", height=canvas_height, width=canvas_width)
         self.canvas.bind("<ButtonPress-1>", self.click)
         self.canvas.bind("<B1-Motion>", self.drag)
         self.canvas.pack(side=tkinter.RIGHT)
-        
+
         self.run_stop_text = tkinter.StringVar()
         button = tkinter.Button(self.frame,
                                 textvariable=self.run_stop_text,
@@ -56,7 +56,7 @@ class life:
         self.frame.pack(side=tkinter.LEFT)
 
 
-        
+
         #button.pack(side=tkinter.LEFT)
 
         # Create grid
@@ -64,7 +64,7 @@ class life:
         for i in range(numH+1):
             x1 = self.horizontal_margin
             x2 = self.horizontal_margin+self.grid_width
-            y1 = self.verticle_margin+i*self.cell_size
+            y1 = self.vertical_margin+i*self.cell_size
             y2 = y1
             self.canvas.create_line(x1, y1, x2, y2)
 
@@ -72,8 +72,8 @@ class life:
         for i in range(numW+1):
             x1 = self.horizontal_margin+i*self.cell_size
             x2 = x1
-            y1 = self.verticle_margin
-            y2 = self.verticle_margin+self.grid_height
+            y1 = self.vertical_margin
+            y2 = self.vertical_margin+self.grid_height
             self.canvas.create_line(x1, y1, x2, y2)
 
         # Matrix containing ids of each cell in the grid on the canvas
@@ -84,7 +84,7 @@ class life:
             # height
             for j in range(numH):
                 sy = self.horizontal_margin+i*self.cell_size
-                sx = self.verticle_margin+j*self.cell_size
+                sx = self.vertical_margin+j*self.cell_size
                 Id = self.canvas.create_rectangle(
                     sy, sx, sy+self.cell_size, sx+self.cell_size, fill="white")
 
@@ -159,7 +159,7 @@ class life:
 
         return locations
 
-    def swich_matrix(self):  # switches colors of appropriate entries, returns new live pixel list
+    def switch_matrix(self):  # switches colors of appropriate entries, returns new live pixel list
         spl = []  # switch pixel list
         for pxl in self.livingPixelList:
             n = self.num_neighbors(pxl[0], pxl[1])
@@ -183,8 +183,8 @@ class life:
     def event_flip(self, event):
         event_left = event.x < self.horizontal_margin
         event_right = event.x >= self.horizontal_margin+self.grid_width
-        event_above = event.y < self.verticle_margin
-        event_below = event.y >= self.verticle_margin+self.grid_height
+        event_above = event.y < self.vertical_margin
+        event_below = event.y >= self.vertical_margin+self.grid_height
 
         if event_left or event_right or event_above or event_below:
             # Clicking outside the grid starts the run
@@ -193,11 +193,12 @@ class life:
         elif not(self.running):
             # Flip cell. Not allowed after starting.
             i = int((event.x-self.horizontal_margin)/self.cell_size)
-            j = int((event.y-self.verticle_margin)/self.cell_size)
+            j = int((event.y-self.vertical_margin)/self.cell_size)
             if (i, j) not in self.currently_flipped_pixels:
                 self.currently_flipped_pixels.add((i, j))
                 if self.is_alive(i, j):
                     self.canvas.itemconfig(self.idMatrix[i][j], fill="white")
+                    self.livingPixelList.remove((i, j))
                 else:
                     self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
                     self.livingPixelList.append((i, j))
@@ -222,7 +223,7 @@ class life:
 
     def loop(self):
         if self.running:
-            self.livingPixelList = self.swich_matrix()
+            self.livingPixelList = self.switch_matrix()
 
         self.root.after(1, self.loop)
 
