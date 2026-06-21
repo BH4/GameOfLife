@@ -27,7 +27,9 @@ class life:
         self.currently_flipped_pixels = set()
 
         self.running = False
-        self.root.after(1, self.loop)
+        max_updates_per_second = 20
+        self.delay_ms = max(1, 1000//max_updates_per_second)
+        self.root.after(self.delay_ms, self.loop)
         self.root.mainloop()
 
     def setup(self):
@@ -214,7 +216,7 @@ class life:
         if self.running:
             self.update_generation()
 
-        self.root.after(1, self.loop)
+        self.root.after(self.delay_ms, self.loop)
 
 
 if __name__ == '__main__':
