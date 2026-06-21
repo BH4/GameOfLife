@@ -19,8 +19,8 @@ class life:
 
         # Name attributes which will be created in setup
         self.canvas = None
-        self.idMatrix = None
-        self.livingPixelList = None
+        self.id_matrix = None
+        self.living_pixel_list = None
         self.setup()
 
         self.currently_flipped_pixels = set()
@@ -34,10 +34,7 @@ class life:
         Creates initial grid and pattern as well as button bindings.
         """
 
-        numH = self.height
         canvas_height = self.grid_height+2*self.vertical_margin
-
-        numW = self.width
         canvas_width = self.grid_width+2*self.horizontal_margin
 
         # Construct canvas object
@@ -61,7 +58,7 @@ class life:
 
         # Create grid
         # Horizontal lines
-        for i in range(numH+1):
+        for i in range(self.height+1):
             x1 = self.horizontal_margin
             x2 = self.horizontal_margin+self.grid_width
             y1 = self.vertical_margin+i*self.cell_size
@@ -69,7 +66,7 @@ class life:
             self.canvas.create_line(x1, y1, x2, y2)
 
         # Vertical lines
-        for i in range(numW+1):
+        for i in range(self.width+1):
             x1 = self.horizontal_margin+i*self.cell_size
             x2 = x1
             y1 = self.vertical_margin
@@ -77,12 +74,12 @@ class life:
             self.canvas.create_line(x1, y1, x2, y2)
 
         # Matrix containing ids of each cell in the grid on the canvas
-        self.idMatrix = []
+        self.id_matrix = []
         # width
-        for i in range(numW):
+        for i in range(self.width):
             c = []
             # height
-            for j in range(numH):
+            for j in range(self.height):
                 sy = self.horizontal_margin+i*self.cell_size
                 sx = self.vertical_margin+j*self.cell_size
                 Id = self.canvas.create_rectangle(
@@ -90,16 +87,16 @@ class life:
 
                 c.append(Id)
 
-            self.idMatrix.append(c)
+            self.id_matrix.append(c)
 
         glider = [(2, 1), (3, 2), (3, 3), (2, 3), (1, 3)]
         for point in glider:
-            self.canvas.itemconfig(self.idMatrix[point[0]][point[1]], fill="black")
+            self.canvas.itemconfig(self.id_matrix[point[0]][point[1]], fill="black")
 
-        self.livingPixelList = glider
+        self.living_pixel_list = glider
 
     def is_alive(self, x, y):
-        Id = self.idMatrix[x][y]
+        Id = self.id_matrix[x][y]
         return self.canvas.itemcget(Id, "fill") == "black"
 
     def num_neighbors(self, x, y):
@@ -112,13 +109,13 @@ class life:
         return tot
 
     def adjoining_pixel_indices(self, pxl):  # list of all neighbors in format [(x,y)]
-        allN = []
+        all_neighbors = []
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if not(j == 0 and i == 0):
-                    allN.append(((pxl[0]+i) % self.width, (pxl[1]+j) % self.height))
+                if not (j == 0 and i == 0):
+                    all_neighbors.append(((pxl[0]+i) % self.width, (pxl[1]+j) % self.height))
 
-        return allN
+        return all_neighbors
 
     def union(self, a, b):
         return list(set(a) | set(b))
@@ -140,17 +137,17 @@ class life:
         """
         locations = []
 
-        neighborMatrix = []
+        neighbor_matrix = []
         for pxl in lpl:
-            neighborMatrix.append(self.adjoining_pixel_indices(pxl))
+            neighbor_matrix.append(self.adjoining_pixel_indices(pxl))
 
-        NeighborUnion = self.matrix_union(neighborMatrix)
+        neighbor_union = self.matrix_union(neighbor_matrix)
 
-        deadNeighborUnion = self.difference(NeighborUnion, lpl)
+        dead_neighbor_union = self.difference(neighbor_union, lpl)
 
-        for pxl in deadNeighborUnion:
+        for pxl in dead_neighbor_union:
             count = 0
-            for row in neighborMatrix:  # could speed up by not continuing after count==4
+            for row in neighbor_matrix:  # could speed up by not continuing after count==4
                 if pxl in row:
                     count += 1
 
@@ -161,22 +158,22 @@ class life:
 
     def switch_matrix(self):  # switches colors of appropriate entries, returns new live pixel list
         spl = []  # switch pixel list
-        for pxl in self.livingPixelList:
+        for pxl in self.living_pixel_list:
             n = self.num_neighbors(pxl[0], pxl[1])
 
             if n > 3 or n < 2:
                 spl.append(pxl)
 
         # list of dead pixel list to switch
-        sdpl = self.births(self.livingPixelList)
+        sdpl = self.births(self.living_pixel_list)
 
-        nlpl = self.difference(self.livingPixelList, spl)  # new live pxl list
+        nlpl = self.difference(self.living_pixel_list, spl)  # new live pxl list
         for pxl in spl:
-            self.canvas.itemconfig(self.idMatrix[pxl[0]][pxl[1]], fill="white")
+            self.canvas.itemconfig(self.id_matrix[pxl[0]][pxl[1]], fill="white")
 
         nlpl.extend(sdpl)
         for pxl in sdpl:
-            self.canvas.itemconfig(self.idMatrix[pxl[0]][pxl[1]], fill="black")
+            self.canvas.itemconfig(self.id_matrix[pxl[0]][pxl[1]], fill="black")
 
         return nlpl
 
@@ -197,11 +194,11 @@ class life:
             if (i, j) not in self.currently_flipped_pixels:
                 self.currently_flipped_pixels.add((i, j))
                 if self.is_alive(i, j):
-                    self.canvas.itemconfig(self.idMatrix[i][j], fill="white")
-                    self.livingPixelList.remove((i, j))
+                    self.canvas.itemconfig(self.id_matrix[i][j], fill="white")
+                    self.living_pixel_list.remove((i, j))
                 else:
-                    self.canvas.itemconfig(self.idMatrix[i][j], fill="black")
-                    self.livingPixelList.append((i, j))
+                    self.canvas.itemconfig(self.id_matrix[i][j], fill="black")
+                    self.living_pixel_list.append((i, j))
 
     # Callback functions
 
@@ -223,7 +220,7 @@ class life:
 
     def loop(self):
         if self.running:
-            self.livingPixelList = self.switch_matrix()
+            self.living_pixel_list = self.switch_matrix()
 
         self.root.after(1, self.loop)
 
