@@ -1,4 +1,5 @@
 import tkinter
+from collections import defaultdict
 
 
 class life:
@@ -20,7 +21,7 @@ class life:
         # Name attributes which will be created in setup
         self.canvas = None
         self.id_matrix = None
-        self.living_pixel_list = None
+        self.living_pixel_list = set()
         self.setup()
 
         self.currently_flipped_pixels = set()
@@ -93,17 +94,16 @@ class life:
         for point in glider:
             self.canvas.itemconfig(self.id_matrix[point[0]][point[1]], fill="black")
 
-        self.living_pixel_list = glider
+        self.living_pixel_list = set(glider)
 
     def is_alive(self, x, y):
-        Id = self.id_matrix[x][y]
-        return self.canvas.itemcget(Id, "fill") == "black"
+        return (x, y) in self.living_pixel_list
 
     def num_neighbors(self, x, y):
         tot = 0
         for i in range(-1, 2):
             for j in range(-1, 2):
-                if not(j == 0 and i == 0):
+                if not (j == 0 and i == 0):
                     tot += self.is_alive((x+i) % self.width, (y+j) % self.height)
 
         return tot
@@ -117,77 +117,68 @@ class life:
 
         return all_neighbors
 
-    def union(self, a, b):
-        return list(set(a) | set(b))
-
-    def matrix_union(self, M):
-        U = []
-        for i in M:
-            U = self.union(U, i)
-
-        return U
-
-    def difference(self, a, b):
-        return list(set(a) - set(b))
-
     def births(self, lpl):
         """
-        Pixels that are currently not living but have 3 living neighbors will
-        be living next generation.
+        Return location of pixels that are currently not living but have 3
+        living neighbors. These will be living in the next generation.
         """
-        locations = []
+        locations = set()
 
-        neighbor_matrix = []
+        # Find number of living neighbors for empty pixel neighbors of
+        # living pixels
+        neighbor_count = defaultdict(int)
         for pxl in lpl:
-            neighbor_matrix.append(self.adjoining_pixel_indices(pxl))
+            for neighbor in self.adjoining_pixel_indices(pxl):
+                if neighbor not in lpl:
+                    neighbor_count[neighbor] += 1
 
-        neighbor_union = self.matrix_union(neighbor_matrix)
-
-        dead_neighbor_union = self.difference(neighbor_union, lpl)
-
-        for pxl in dead_neighbor_union:
-            count = 0
-            for row in neighbor_matrix:  # could speed up by not continuing after count==4
-                if pxl in row:
-                    count += 1
-
+        for pxl, count in neighbor_count.items():
             if count == 3:
-                locations.append(pxl)
+                locations.add(pxl)
 
         return locations
 
-    def switch_matrix(self):  # switches colors of appropriate entries, returns new live pixel list
-        spl = []  # switch pixel list
+    def update_generation(self):
+        """
+        Process new generation for game of life.
+        Determines the pixels which change color in new generation and updates
+        the canvas to correspond.
+
+        Also updates the living pixel list.
+        """
+        # set of pixels that die from too many or too few neighbors
+        dying_locations = set()
         for pxl in self.living_pixel_list:
             n = self.num_neighbors(pxl[0], pxl[1])
 
             if n > 3 or n < 2:
-                spl.append(pxl)
+                dying_locations.add(pxl)
 
-        # list of dead pixel list to switch
-        sdpl = self.births(self.living_pixel_list)
+        # Set of dead pixels which change to alive this generation
+        birth_locations = self.births(self.living_pixel_list)
 
-        nlpl = self.difference(self.living_pixel_list, spl)  # new live pxl list
-        for pxl in spl:
+        for pxl in dying_locations:
             self.canvas.itemconfig(self.id_matrix[pxl[0]][pxl[1]], fill="white")
 
-        nlpl.extend(sdpl)
-        for pxl in sdpl:
+        for pxl in birth_locations:
             self.canvas.itemconfig(self.id_matrix[pxl[0]][pxl[1]], fill="black")
 
-        return nlpl
+        self.living_pixel_list -= dying_locations
+        self.living_pixel_list |= birth_locations
 
     def event_flip(self, event):
+        """
+        Checks click events for location and swaps the state of the pixel at
+        that location.
+        """
         event_left = event.x < self.horizontal_margin
         event_right = event.x >= self.horizontal_margin+self.grid_width
         event_above = event.y < self.vertical_margin
         event_below = event.y >= self.vertical_margin+self.grid_height
 
-        if event_left or event_right or event_above or event_below:
-            # Clicking outside the grid starts the run
-            # self.running = True
-            pass
-        elif not(self.running):
+        outside = event_left or event_right or event_above or event_below
+
+        if not (self.running) and not outside:
             # Flip cell. Not allowed after starting.
             i = int((event.x-self.horizontal_margin)/self.cell_size)
             j = int((event.y-self.vertical_margin)/self.cell_size)
@@ -198,10 +189,9 @@ class life:
                     self.living_pixel_list.remove((i, j))
                 else:
                     self.canvas.itemconfig(self.id_matrix[i][j], fill="black")
-                    self.living_pixel_list.append((i, j))
+                    self.living_pixel_list.add((i, j))
 
     # Callback functions
-
     def click(self, event):
         self.currently_flipped_pixels = set()
 
@@ -220,7 +210,7 @@ class life:
 
     def loop(self):
         if self.running:
-            self.living_pixel_list = self.switch_matrix()
+            self.update_generation()
 
         self.root.after(1, self.loop)
 
